@@ -1,39 +1,64 @@
-#include<iostream>
-#include<cmath>
-#include<limits>
+#include <iostream>
+#include <stdexcept>
+#include <new>
+
 using namespace std;
 
-int main(){
-	int x,y;
-	double d;
-	do{
-		try{
-			cout<<"Enter 2 numbers: ";
-			cin>>x>>y;
+class div0 : public exception {
+public:
+    const char* what() const noexcept override {
+        return "Divided by zero";
+    }
+};
 
-			if(cin.fail()){
-				throw "Incorrect type entered";
-			}
+class my_cin : public exception {
+public:
+    const char* what() const noexcept override {
+        return "Incorrect type entered";
+    }
+};
 
-			if(abs(x)>1000 || abs(y)>1000){
-				throw "Value out of range";
-			}
+int main() {
+    int x, y;
+    double d;
+    int repeat;
 
-			if(y==0){
-				throw "Error divide by zero";
-			}
+    do {
+        repeat = 0;
+        try {
+            cout << "Enter 2 numbers: ";
+            cin >> x >> y;
 
-			/* Normal Code */
-			d=(double)x/y;
-			cout<<"The result is "<<d<<"\n";
-			break;
-		}
-		catch(const char* error){
-			cout<<error<<"\n";
-			cin.clear();
-			cin.ignore(numeric_limits<streamsize>::max(), '\n');
-		}
-	}while(true);
+            if (cin.fail()) throw my_cin();
 
-	return 0;
+            if (x < -10000 || x > 1000 || y < -10000 || y > 1000)
+                throw runtime_error("Value out of range");
+
+            if (y == 0) throw div0();
+
+            d = static_cast<double>(x) / y;
+            cout << "The result is " << d << endl;
+        }
+        catch (const exception& e) {
+            cerr << "Error: " << e.what() << endl;
+            
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(10000, '\n');
+            }
+            repeat = 1; 
+        }
+    } while (repeat);
+
+    cout << "\n--- Testing bad_alloc ---" << endl;
+    try { 
+        while (true) {
+            double* ptr = new double[100000000]; 
+        }
+    }
+    catch (const exception& e) { 
+        cerr << "Caught standard exception: " << e.what() << endl;
+    }
+
+    return 0;
 }
